@@ -17,10 +17,9 @@ const Map = dynamic(() => import("@/components/Map"), {
 
 interface MapAppProps {
   initialLocations: Location[];
-  isLoggedIn: boolean;
 }
 
-export default function MapApp({ initialLocations, isLoggedIn }: MapAppProps) {
+export default function MapApp({ initialLocations }: MapAppProps) {
   const [locations, setLocations] = useState<Location[]>(initialLocations);
   const [isAddMode, setIsAddMode] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -32,7 +31,9 @@ export default function MapApp({ initialLocations, isLoggedIn }: MapAppProps) {
   }
 
   function handleCreated(location: Location) {
-    setLocations((prev) => [...prev, location]);
+    if (location.approved) {
+      setLocations((prev) => [...prev, location]);
+    }
     setPendingCoords(null);
   }
 
@@ -40,12 +41,7 @@ export default function MapApp({ initialLocations, isLoggedIn }: MapAppProps) {
     <div className="relative h-dvh w-full">
       <Map locations={locations} isAddMode={isAddMode} onMapClick={handleMapClick} />
 
-      {isLoggedIn && (
-        <FloatingAddButton
-          active={isAddMode}
-          onClick={() => setIsAddMode((prev) => !prev)}
-        />
-      )}
+      <FloatingAddButton active={isAddMode} onClick={() => setIsAddMode((prev) => !prev)} />
 
       {isAddMode && (
         <div className="pointer-events-none fixed top-8 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-primary/40 bg-surface/95 px-4 py-2 text-sm text-primary shadow-[0_0_20px_rgba(57,255,20,0.25)]">

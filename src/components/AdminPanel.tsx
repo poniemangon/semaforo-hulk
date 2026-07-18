@@ -149,6 +149,31 @@ export default function AdminPanel({ initialLocations, initialUsers }: AdminPane
     setLocations((prev) => prev.filter((loc) => loc.id !== id));
   }
 
+  async function handleAccept(id: string) {
+    setError(null);
+    setDeletingId(id);
+    const supabase = createClient();
+
+    const { data, error: updateError } = await supabase
+      .from("locations")
+      .update({ approved: true })
+      .eq("id", id)
+      .select()
+      .single();
+
+    setDeletingId(null);
+
+    if (updateError || !data) {
+      setError(updateError?.message ?? "No se pudo aprobar.");
+      return;
+    }
+
+    setLocations((prev) => prev.map((loc) => (loc.id === id ? (data as Location) : loc)));
+  }
+
+  const pendingLocations = locations.filter((loc) => !loc.approved);
+  const approvedLocations = locations.filter((loc) => loc.approved);
+
   return (
     <main className="min-h-dvh w-full bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur">
@@ -234,46 +259,95 @@ export default function AdminPanel({ initialLocations, initialUsers }: AdminPane
           </button>
         </form>
 
-        <div className="flex flex-col rounded-2xl border border-border bg-surface shadow-[0_0_30px_rgba(0,0,0,0.3)] lg:col-span-3">
-          <h2 className="border-b border-border px-6 py-4 text-sm font-semibold tracking-wide text-muted">
-            {locations.length} LOCACIONES
-          </h2>
-          <ul className="divide-y divide-border">
-            {locations.map((loc) => (
-              <li key={loc.id} className="flex items-center gap-4 px-6 py-3.5">
-                {loc.location_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={loc.location_image}
-                    alt={loc.location_name}
-                    className="h-12 w-12 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg bg-surface-2" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {loc.location_name}
-                  </p>
-                  <p className="text-xs text-muted">
-                    {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(loc.id)}
-                  disabled={deletingId === loc.id}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-60"
-                >
-                  {deletingId === loc.id ? "..." : "Quitar"}
-                </button>
-              </li>
-            ))}
-            {locations.length === 0 && (
-              <li className="px-6 py-10 text-center text-sm text-muted">
-                No hay locaciones todavía.
-              </li>
-            )}
-          </ul>
+        <div className="flex flex-col gap-6 lg:col-span-3">
+          {pendingLocations.length > 0 && (
+            <div className="flex flex-col rounded-2xl border border-primary/40 bg-surface shadow-[0_0_30px_rgba(57,255,20,0.1)]">
+              <h2 className="flex items-center gap-2 border-b border-border px-6 py-4 text-sm font-semibold tracking-wide text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_#39ff14]" />
+                {pendingLocations.length} PENDIENTES DE APROBACIÓN
+              </h2>
+              <ul className="divide-y divide-border">
+                {pendingLocations.map((loc) => (
+                  <li key={loc.id} className="flex items-center gap-4 px-6 py-3.5">
+                    {loc.location_image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={loc.location_image}
+                        alt={loc.location_name}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-surface-2" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {loc.location_name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleAccept(loc.id)}
+                      disabled={deletingId === loc.id}
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+                    >
+                      {deletingId === loc.id ? "..." : "Aceptar"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(loc.id)}
+                      disabled={deletingId === loc.id}
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-60"
+                    >
+                      Rechazar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex flex-col rounded-2xl border border-border bg-surface shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+            <h2 className="border-b border-border px-6 py-4 text-sm font-semibold tracking-wide text-muted">
+              {approvedLocations.length} LOCACIONES
+            </h2>
+            <ul className="divide-y divide-border">
+              {approvedLocations.map((loc) => (
+                <li key={loc.id} className="flex items-center gap-4 px-6 py-3.5">
+                  {loc.location_image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={loc.location_image}
+                      alt={loc.location_name}
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-surface-2" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {loc.location_name}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(loc.id)}
+                    disabled={deletingId === loc.id}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-60"
+                  >
+                    {deletingId === loc.id ? "..." : "Quitar"}
+                  </button>
+                </li>
+              ))}
+              {approvedLocations.length === 0 && (
+                <li className="px-6 py-10 text-center text-sm text-muted">
+                  No hay locaciones todavía.
+                </li>
+              )}
+            </ul>
+          </div>
         </div>
 
         <div className="lg:col-span-5">

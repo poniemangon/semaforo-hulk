@@ -5,5 +5,6 @@ export interface Location {
   location_name: string;
   location_image: string | null;
   user_id: string | null;
+  approved: boolean;
   created_at: string;
 }

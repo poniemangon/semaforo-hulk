@@ -8,7 +8,11 @@ export default async function Home() {
   const supabase = await createClient();
 
   const [{ data: locations }, { data: userData }] = await Promise.all([
-    supabase.from("locations").select("*").order("created_at", { ascending: true }),
+    supabase
+      .from("locations")
+      .select("*")
+      .eq("approved", true)
+      .order("created_at", { ascending: true }),
     supabase.auth.getUser(),
   ]);
 
@@ -30,7 +34,7 @@ export default async function Home() {
         <Image src="/logo-mark.png" alt="Semáforo Hulk" width={44} height={44} />
       </div>
       <AuthWidget username={username} isAdmin={isAdmin} />
-      <MapApp initialLocations={(locations as Location[]) ?? []} isLoggedIn={!!userData.user} />
+      <MapApp initialLocations={(locations as Location[]) ?? []} />
     </main>
   );
 }
